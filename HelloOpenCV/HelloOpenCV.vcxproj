@@ -156,6 +156,12 @@
   <ItemGroup>
     <ClCompile Include="video.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Segmentation.h" />
+    <ClInclude Include="SegmentedTransformation.h" />
+    <ClInclude Include="TransformationDisplay.h" />
+    <ClInclude Include="VideoTransformation.h" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
