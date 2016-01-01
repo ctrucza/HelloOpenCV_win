@@ -4,6 +4,7 @@
 #include "VideoTransformation.h"
 #include "TransformationDisplay.h"
 #include "SegmentedTransformation.h"
+#include "PredictorTransformation.h"
 
 using namespace cv;
 using namespace std;
@@ -36,6 +37,9 @@ int process(VideoCapture& capture) {
     ChainedTransformation null_transformation;
     TransformationDisplay null_display("null", null_transformation);
 
+    PredictorTransformation predictor(width, height, 4, 4);
+    TransformationDisplay prediction("prediction", predictor);
+
     Mat frame;
 
     double frame_count = capture.get(CAP_PROP_FRAME_COUNT);
@@ -53,6 +57,7 @@ int process(VideoCapture& capture) {
         pixelated.display(frame);
         chained.display(frame);
         null_display.display(frame);
+        prediction.display(frame);
 
         char key = static_cast<char>(waitKey(1)); //delay N millis, usually long enough to display and capture input
 

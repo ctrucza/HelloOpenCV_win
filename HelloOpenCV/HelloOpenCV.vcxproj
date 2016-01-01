@@ -157,6 +157,7 @@
     <ClCompile Include="video.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="PredictorTransformation.h" />
     <ClInclude Include="Segmentation.h" />
     <ClInclude Include="SegmentedTransformation.h" />
     <ClInclude Include="TransformationDisplay.h" />
