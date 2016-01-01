@@ -14,33 +14,39 @@ void process_roi(Mat& r)
     r = m;
 }
 
-vector<Rect> get_rois(const Mat& frame)
+class Segmentation
 {
-    int width = frame.cols;
-    int height = frame.rows;
-
-    int roi_width = 80;
-    int roi_height = 1;
-
-    int roi_per_col = width / roi_width;
-    int roi_per_row = height / roi_height;
-
-    vector<Rect> result;
-    for (int roi_col = 0; roi_col < roi_per_col; ++roi_col)
+private:
+    int segment_width;
+    int segment_height;
+public:
+    Segmentation(int width, int height)
+        : segment_width(width), segment_height(height)
     {
-        for (int roi_row = 0; roi_row < roi_per_row; ++roi_row)
-        {
-            Rect roi(roi_col*roi_width, roi_row*roi_height, roi_width, roi_height);
-            result.push_back(roi);
-        }
+        
     }
-    return result;
-}
 
-Mat process_frame(Mat& frame)
+    vector<Rect> get_segments(int width, int height) const
+    {
+        int segments_per_col = width / segment_width;
+        int segments_per_row = height / segment_height;
+
+        vector<Rect> result;
+        for (int segment_col = 0; segment_col < segments_per_col; ++segment_col)
+        {
+            for (int segment_row = 0; segment_row < segments_per_row; ++segment_row)
+            {
+                Rect roi(segment_col*segment_width, segment_row*segment_height, segment_width, segment_height);
+                result.push_back(roi);
+            }
+        }
+        return result;
+    }
+};
+
+Mat process_frame(Mat& frame, const vector<Rect> segments)
 {
-    vector<Rect> rois = get_rois(frame);
-    for (auto i = rois.begin(); i != rois.end(); ++i)
+    for (auto i = segments.begin(); i != segments.end(); ++i)
     {
         Mat roi_img = frame(*i);
         process_roi(roi_img);
@@ -49,6 +55,13 @@ Mat process_frame(Mat& frame)
 }
 
 int process(VideoCapture& capture) {
+
+    double width = capture.get(CAP_PROP_FRAME_WIDTH);
+    double height = capture.get(CAP_PROP_FRAME_HEIGHT);
+
+    Segmentation s(80, 1);
+    vector<Rect> segments = s.get_segments(width, height);
+
     string original_window_name = "video | q or esc to quit";
     namedWindow(original_window_name, WINDOW_AUTOSIZE);
 
@@ -70,7 +83,7 @@ int process(VideoCapture& capture) {
         Mat grayscale;
         cvtColor(frame, grayscale, COLOR_BGRA2GRAY);
 
-        processed_frame = process_frame(grayscale);
+        processed_frame = process_frame(grayscale, segments);
         imshow(processed_window_name, processed_frame);
 
         char key = static_cast<char>(waitKey(1)); //delay N millis, usually long enough to display and capture input
