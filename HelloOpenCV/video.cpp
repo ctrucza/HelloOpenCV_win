@@ -50,29 +50,30 @@ vector<Rect> get_rois(const Mat& frame)
 	int width = frame.cols;
 	int height = frame.rows;
 
-	int pwidth = 80;
-	int pheight = 1;
+    int roi_width = 80;
+    int roi_height = 1;
 
-	int pcols = width / pwidth;
-	int prows = height / pheight;
+	int roi_per_col = width / roi_width;
+	int roi_per_row = height / roi_height;
 
 	vector<Rect> result;
-	for (int c = 0; c < pcols; ++c)
+	for (int roi_col = 0; roi_col < roi_per_col; ++roi_col)
 	{
-		for (int r = 0; r < prows; ++r)
+		for (int roi_row = 0; roi_row < roi_per_row; ++roi_row)
 		{
-			Rect roi(c*pwidth, r*pheight, pwidth, pheight);
+			Rect roi(roi_col*roi_width, roi_row*roi_height, roi_width, roi_height);
 			result.push_back(roi);
 		}
 	}
 	return result;
 }
+
 Mat process_frame(Mat& frame)
 {
 	vector<Rect> rois = get_rois(frame);
-	for (int i = 0; i < rois.size(); ++i)
+	for (auto i = rois.begin(); i != rois.end(); ++i)
 	{
-		Mat roi_img = frame(rois[i]);
+		Mat roi_img = frame(*i);
 		process_roi(roi_img);
 	}
 	return frame;
