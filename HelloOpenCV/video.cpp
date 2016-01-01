@@ -7,42 +7,14 @@
 //
 
 #include <opencv2/opencv.hpp>
-#include <opencv2/imgcodecs.hpp>
-#include <opencv2/videoio/videoio.hpp>
-#include <opencv2/highgui/highgui.hpp>
 
 #include <iostream>
-#include <stdio.h>
+#include <vector>
 
 using namespace cv;
 using namespace std;
 
-Mat f(Mat& roi)
-{
-	cvtColor(roi, roi, COLOR_BGRA2GRAY);
-	return roi;
-
-}
-
-//void process_roi(Mat& roi)
-//{
-//	for (int x = 0; x < roi.cols; ++x)
-//	{
-//		for (int y = 0; y < roi.rows; ++y)
-//		{
-//			Vec3b color = roi.at<Vec3b>(Point(x, y));
-//			//color[0] = 0;
-//			//color[1] = 0;
-//			color[2] = 255;
-//			roi.at<Vec3b>(Point(x, y)) = color;
-//		}
-//	}
-//	Mat g = roi;
-//	cvtColor(roi, roi, COLOR_BGRA2GRAY);
-//	//roi = g;
-//}
-
-void process_roi(Mat& r, int red, int green, int blue)
+void process_roi(Mat& r)
 {
 	double sum = 0;
 	for (int x = 0; x < r.cols; ++x)
@@ -68,7 +40,7 @@ void process_roi(Mat& r, int red, int green, int blue)
 	{
 		for (int y = 0; y < r.rows; ++y)
 		{
-			r.at<uchar>(Point(x, y)) = value;
+			r.at<uchar>(Point(x, y)) = static_cast<uchar>(value);
 		}
 	}
 }
@@ -89,12 +61,8 @@ vector<Rect> get_rois(const Mat& frame)
 	{
 		for (int r = 0; r < prows; ++r)
 		{
-			int red = 255 * (double(r) / double(prows));
-			int green = 255 * (double(c) / double(pcols));
 			Rect roi(c*pwidth, r*pheight, pwidth, pheight);
 			result.push_back(roi);
-			//Mat roi_img = frame(roi);
-			//process_roi(roi_img, red, green, 0);
 		}
 	}
 	return result;
@@ -105,7 +73,7 @@ Mat process_frame(Mat& frame)
 	for (int i = 0; i < rois.size(); ++i)
 	{
 		Mat roi_img = frame(rois[i]);
-		process_roi(roi_img, 0, 0, 0);
+		process_roi(roi_img);
 	}
 	return frame;
 }
@@ -119,8 +87,6 @@ int process(VideoCapture& capture) {
 
     Mat frame;
 	Mat processed_frame;
-	double width = capture.get(CAP_PROP_FRAME_WIDTH);
-	double height = capture.get(CAP_PROP_FRAME_HEIGHT);
 
 	double frame_count = capture.get(CAP_PROP_FRAME_COUNT);
 	int current_frame = 0;
@@ -137,7 +103,7 @@ int process(VideoCapture& capture) {
 		processed_frame = process_frame(grayscale);
 		imshow(processed_window_name, processed_frame);
 
-        char key = (char)waitKey(1); //delay N millis, usually long enough to display and capture input
+        char key = static_cast<char>(waitKey(1)); //delay N millis, usually long enough to display and capture input
         
         switch (key) {
             case 'q':
@@ -152,9 +118,10 @@ int process(VideoCapture& capture) {
 }
 
 int main(int ac, char** av) {
-//    if (ac != 2) {
-//        return 1;
-//    }
+    if (ac != 2) {
+		cerr << "Usage: " << av[0] << " videofile" << endl;
+        return 1;
+    }
     std::string arg = av[1];
     VideoCapture capture(arg); //try to open string, this will attempt to open it as a video file or image sequence
     if (!capture.isOpened()) {
