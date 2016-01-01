@@ -38,14 +38,14 @@ int process(VideoCapture& capture) {
     ChainedTransformation null_transformation;
     TransformationDisplay null_display("null", null_transformation);
 
-    PredictorTransformation predictor(width, height, 8, 8);
-    TransformationDisplay prediction("prediction", predictor);
+    PredictorTransformation predictor(width, height, 16, 16);
+    TransformationDisplay prediction("color prediction", predictor);
 
-    ChainedTransformation loose;
-    loose.add(&g);
+    ChainedTransformation grayscale_predictor;
+    grayscale_predictor.add(&g);
     //loose.add(&p);
-    loose.add(&predictor);
-    TransformationDisplay loose_prediction("loose prediction", loose);
+    grayscale_predictor.add(&predictor);
+    TransformationDisplay grayscale_prediction("grayscale prediction", grayscale_predictor);
 
     Mat frame;
 
@@ -64,8 +64,8 @@ int process(VideoCapture& capture) {
         //pixelated.display(frame);
         //chained.display(frame);
         //null_display.display(frame);
-        //prediction.display(frame);
-        loose_prediction.display(frame);
+        prediction.display(frame);
+        grayscale_prediction.display(frame);
 
         char key = static_cast<char>(waitKey(1)); //delay N millis, usually long enough to display and capture input
 
