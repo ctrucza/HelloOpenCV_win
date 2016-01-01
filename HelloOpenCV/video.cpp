@@ -56,20 +56,26 @@ Mat process_frame(Mat& frame, const vector<Rect> segments)
 
 int process(VideoCapture& capture) {
 
-    double width = capture.get(CAP_PROP_FRAME_WIDTH);
-    double height = capture.get(CAP_PROP_FRAME_HEIGHT);
-
-    Segmentation s(80, 1);
-    vector<Rect> segments = s.get_segments(width, height);
-
     string original_window_name = "video | q or esc to quit";
     namedWindow(original_window_name, WINDOW_AUTOSIZE);
 
-    string processed_window_name = "processed";
-    namedWindow(processed_window_name, WINDOW_AUTOSIZE);
+    double width = capture.get(CAP_PROP_FRAME_WIDTH);
+    double height = capture.get(CAP_PROP_FRAME_HEIGHT);
+
+    Segmentation horizontal(width, 1);
+    vector<Rect> horizontal_segments = horizontal.get_segments(width, height);
+
+    string horizontal_window_name = "horizontal";
+    namedWindow(horizontal_window_name, WINDOW_AUTOSIZE);
+
+    Segmentation vertical(1, height);
+    vector<Rect> vertical_segments = vertical.get_segments(width, height);
+    string vertical_window_name = "vertical";
+    namedWindow(vertical_window_name, WINDOW_AUTOSIZE);
 
     Mat frame;
-    Mat processed_frame;
+    Mat horizontal_frame;
+    Mat vertical_frame;
 
     double frame_count = capture.get(CAP_PROP_FRAME_COUNT);
     int current_frame = 0;
@@ -80,11 +86,16 @@ int process(VideoCapture& capture) {
         cout << current_frame++ << "/" << frame_count << endl;
 
         imshow(original_window_name, frame);
-        Mat grayscale;
-        cvtColor(frame, grayscale, COLOR_BGRA2GRAY);
+        Mat grayscale1;
+        cvtColor(frame, grayscale1, COLOR_BGRA2GRAY);
 
-        processed_frame = process_frame(grayscale, segments);
-        imshow(processed_window_name, processed_frame);
+        horizontal_frame = process_frame(grayscale1, horizontal_segments);
+        imshow(horizontal_window_name, horizontal_frame);
+
+        Mat grayscale2;
+        cvtColor(frame, grayscale2, COLOR_BGRA2GRAY);
+        vertical_frame = process_frame(grayscale2, vertical_segments);
+        imshow(vertical_window_name, vertical_frame);
 
         char key = static_cast<char>(waitKey(1)); //delay N millis, usually long enough to display and capture input
 
