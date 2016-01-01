@@ -1,11 +1,3 @@
-//
-//  main.cpp
-//  HelloOpenCV
-//
-//  Created by Csaba Trucza on 22/12/15.
-//  Copyright © 2015 Csaba Trucza. All rights reserved.
-//
-
 #include <opencv2/opencv.hpp>
 
 #include <iostream>
