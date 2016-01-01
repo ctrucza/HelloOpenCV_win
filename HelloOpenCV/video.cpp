@@ -104,14 +104,8 @@ protected:
     virtual void transform_segment(Mat& r) const = 0;
 
 public:
-    SegmentedTransformation(VideoCapture video, int segment_width, int segment_height)
+    SegmentedTransformation(int width, int height, int segment_width, int segment_height)
     {
-        double width = video.get(CAP_PROP_FRAME_WIDTH);
-        double height = video.get(CAP_PROP_FRAME_HEIGHT);
-        if (segment_width == 0)
-            segment_width = width;
-        if (segment_height == 0)
-            segment_height = height;
         Segmentation segmentation(segment_width, segment_height);
         segments = segmentation.get_segments(width, height);
     }
@@ -129,8 +123,8 @@ protected:
     }
 
 public:
-    AveragingTransformation(const VideoCapture& video, int segment_width, int segment_height)
-        : SegmentedTransformation(video, segment_width, segment_height)
+    AveragingTransformation(int width, int height, int segment_width, int segment_height)
+        : SegmentedTransformation(width, height, segment_width, segment_height)
     {
     }
 };
@@ -157,8 +151,8 @@ public:
 
 int process(VideoCapture& capture) {
 
-    double width = capture.get(CAP_PROP_FRAME_WIDTH);
-    double height = capture.get(CAP_PROP_FRAME_HEIGHT);
+    int width = int(capture.get(CAP_PROP_FRAME_WIDTH));
+    int height = int(capture.get(CAP_PROP_FRAME_HEIGHT));
 
     NullTransformation o;
     TransformationDisplay original("original", o);
@@ -166,19 +160,22 @@ int process(VideoCapture& capture) {
     GrayscaleTransformation g;
     TransformationDisplay grayscale("grayscale", g);
 
-    AveragingTransformation h(capture, width, 1);
+    AveragingTransformation h(width, height, width, 1);
     TransformationDisplay horizontal("horizontal", h);
 
-    AveragingTransformation v(capture, 1, height);
+    AveragingTransformation v(width, height, 1, height);
     TransformationDisplay vertical("vertical", v);
 
-    AveragingTransformation p(capture, 8, 8);
+    AveragingTransformation p(width, height, 8, 8);
     TransformationDisplay pixelated("pixelated", p);
 
     ChainedTransformation c;
     c.add(&g);
     c.add(&p);
     TransformationDisplay chained("chained", c);
+
+    ChainedTransformation null_transformation;
+    TransformationDisplay null_display("null", null_transformation);
 
     Mat frame;
 
@@ -196,6 +193,7 @@ int process(VideoCapture& capture) {
         vertical.display(frame);
         pixelated.display(frame);
         chained.display(frame);
+        null_display.display(frame);
 
         char key = static_cast<char>(waitKey(1)); //delay N millis, usually long enough to display and capture input
 
