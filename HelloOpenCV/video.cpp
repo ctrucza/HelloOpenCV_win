@@ -38,55 +38,48 @@ public:
 
 class VideoTransformation
 {
+public:
+    virtual Mat transform(const Mat& frame) const = 0;
+};
+
+class TransformationDisplay
+{
 private:
     string name;
 
-protected:
-    virtual Mat transform(const Mat& frame) const = 0;
-
+    VideoTransformation& transformation;
 public:
-    VideoTransformation(string name)
-        :name(name)
+    TransformationDisplay(string name, VideoTransformation& t)
+        : name(name), transformation(t)
     {
         namedWindow(name, WINDOW_AUTOSIZE);
     }
 
-    void process(const Mat& frame) const
+    void display(const Mat& frame) const
     {
-        auto result = transform(frame);
+        auto result = transformation.transform(frame);
         imshow(name, result);
     }
 };
 
 class NullTransformation: public VideoTransformation
 {
-protected:
+public:
     Mat transform(const Mat& frame) const override
     {
         return frame;
     }
 public:
-    NullTransformation(string name)
-        :VideoTransformation(name)
-    {
-        
-    }
 };
 
 class GrayscaleTransformation: public VideoTransformation
 {
-protected:
+public:
     Mat transform(const Mat& frame) const override
     {
         Mat grayscale;
         cvtColor(frame, grayscale, COLOR_BGRA2GRAY);
         return grayscale;
-    }
-
-public:
-    explicit GrayscaleTransformation(const string& name)
-        : VideoTransformation(name)
-    {
     }
 };
 
@@ -95,7 +88,7 @@ class SegmentedTransformation: public VideoTransformation
 private:
     vector<Rect> segments;
 
-protected:
+public:
     Mat transform(const Mat& frame) const override {
         Mat result = frame.clone();
         for (auto i = segments.begin(); i != segments.end(); ++i)
@@ -106,11 +99,11 @@ protected:
         return result;
     }
 
+protected:
     virtual void transform_segment(Mat& r) const = 0;
 
 public:
-    SegmentedTransformation(string name, VideoCapture video, int segment_width, int segment_height)
-        :VideoTransformation(name)
+    SegmentedTransformation(VideoCapture video, int segment_width, int segment_height)
     {
         double width = video.get(CAP_PROP_FRAME_WIDTH);
         double height = video.get(CAP_PROP_FRAME_HEIGHT);
@@ -135,8 +128,8 @@ protected:
     }
 
 public:
-    AveragingTransformation(const string& name, const VideoCapture& video, int segment_width, int segment_height)
-        : SegmentedTransformation(name, video, segment_width, segment_height)
+    AveragingTransformation(const VideoCapture& video, int segment_width, int segment_height)
+        : SegmentedTransformation(video, segment_width, segment_height)
     {
     }
 };
@@ -146,11 +139,20 @@ int process(VideoCapture& capture) {
     double width = capture.get(CAP_PROP_FRAME_WIDTH);
     double height = capture.get(CAP_PROP_FRAME_HEIGHT);
 
-    NullTransformation original("original (q or esc to quit)");
-    GrayscaleTransformation grayscale("grayscale");
-    AveragingTransformation h("horizontal", capture, width, 1);
-    AveragingTransformation v("vertical", capture, 1, height);
-    AveragingTransformation pixelated("pixelated", capture, 8, 8);
+    NullTransformation o;
+    TransformationDisplay original("original", o);
+
+    GrayscaleTransformation g;
+    TransformationDisplay grayscale("grayscale", g);
+
+    AveragingTransformation h(capture, width, 1);
+    TransformationDisplay horizontal("horizontal", h);
+
+    AveragingTransformation v(capture, 1, height);
+    TransformationDisplay vertical("vertical", v);
+
+    AveragingTransformation p(capture, 8, 8);
+    TransformationDisplay pixelated("pixelated", p);
 
     Mat frame;
 
@@ -162,11 +164,11 @@ int process(VideoCapture& capture) {
             break;
         cout << current_frame++ << "/" << frame_count << endl;
 
-        original.process(frame);
-        grayscale.process(frame);
-        h.process(frame);
-        v.process(frame);
-        pixelated.process(frame);
+        original.display(frame);
+        grayscale.display(frame);
+        horizontal.display(frame);
+        vertical.display(frame);
+        pixelated.display(frame);
 
         char key = static_cast<char>(waitKey(1)); //delay N millis, usually long enough to display and capture input
 
