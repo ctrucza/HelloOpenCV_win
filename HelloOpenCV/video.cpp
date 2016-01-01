@@ -6,14 +6,6 @@
 using namespace cv;
 using namespace std;
 
-void process_roi(Mat& r)
-{
-    // calculate mean
-    Scalar m = mean(r);
-    // set all pixels to the mean
-    r = m;
-}
-
 class Segmentation
 {
 private:
@@ -44,38 +36,123 @@ public:
     }
 };
 
-Mat process_frame(Mat& frame, const vector<Rect> segments)
+class VideoTransformation
 {
-    for (auto i = segments.begin(); i != segments.end(); ++i)
+private:
+    string name;
+
+protected:
+    virtual Mat transform(const Mat& frame) const = 0;
+
+public:
+    VideoTransformation(string name)
+        :name(name)
     {
-        Mat roi_img = frame(*i);
-        process_roi(roi_img);
+        namedWindow(name, WINDOW_AUTOSIZE);
     }
-    return frame;
-}
+
+    void process(const Mat& frame) const
+    {
+        auto result = transform(frame);
+        imshow(name, result);
+    }
+};
+
+class NullTransformation: public VideoTransformation
+{
+protected:
+    Mat transform(const Mat& frame) const override
+    {
+        return frame;
+    }
+public:
+    NullTransformation(string name)
+        :VideoTransformation(name)
+    {
+        
+    }
+};
+
+class GrayscaleTransformation: public VideoTransformation
+{
+protected:
+    Mat transform(const Mat& frame) const override
+    {
+        Mat grayscale;
+        cvtColor(frame, grayscale, COLOR_BGRA2GRAY);
+        return grayscale;
+    }
+
+public:
+    explicit GrayscaleTransformation(const string& name)
+        : VideoTransformation(name)
+    {
+    }
+};
+
+class SegmentedTransformation: public VideoTransformation
+{
+private:
+    vector<Rect> segments;
+
+protected:
+    Mat transform(const Mat& frame) const override {
+        Mat result = frame.clone();
+        for (auto i = segments.begin(); i != segments.end(); ++i)
+        {
+            Mat segment = result(*i);
+            transform_segment(segment);
+        }
+        return result;
+    }
+
+    virtual void transform_segment(Mat& r) const = 0;
+
+public:
+    SegmentedTransformation(string name, VideoCapture video, int segment_width, int segment_height)
+        :VideoTransformation(name)
+    {
+        double width = video.get(CAP_PROP_FRAME_WIDTH);
+        double height = video.get(CAP_PROP_FRAME_HEIGHT);
+        if (segment_width == 0)
+            segment_width = width;
+        if (segment_height == 0)
+            segment_height = height;
+        Segmentation segmentation(segment_width, segment_height);
+        segments = segmentation.get_segments(width, height);
+    }
+};
+
+class AveragingTransformation: public SegmentedTransformation
+{
+protected:
+    void transform_segment(Mat& segment) const override
+    {
+        // calculate mean
+        Scalar m = mean(segment);
+        // set all pixels to the mean
+        segment = m;
+    }
+
+public:
+    AveragingTransformation(const string& name, const VideoCapture& video, int segment_width, int segment_height)
+        : SegmentedTransformation(name, video, segment_width, segment_height)
+    {
+    }
+};
 
 int process(VideoCapture& capture) {
-
-    string original_window_name = "video | q or esc to quit";
-    namedWindow(original_window_name, WINDOW_AUTOSIZE);
 
     double width = capture.get(CAP_PROP_FRAME_WIDTH);
     double height = capture.get(CAP_PROP_FRAME_HEIGHT);
 
-    Segmentation horizontal(width, 1);
-    vector<Rect> horizontal_segments = horizontal.get_segments(width, height);
-
-    string horizontal_window_name = "horizontal";
-    namedWindow(horizontal_window_name, WINDOW_AUTOSIZE);
-
-    Segmentation vertical(1, height);
-    vector<Rect> vertical_segments = vertical.get_segments(width, height);
-    string vertical_window_name = "vertical";
-    namedWindow(vertical_window_name, WINDOW_AUTOSIZE);
+    NullTransformation original("original (q or esc to quit)");
+    GrayscaleTransformation grayscale("grayscale");
+    AveragingTransformation h("horizontal", capture, width, 1);
+    AveragingTransformation v("vertical", capture, 1, height);
+    AveragingTransformation pixelated("pixelated", capture, 8, 8);
 
     Mat frame;
-    Mat horizontal_frame;
-    Mat vertical_frame;
 
     double frame_count = capture.get(CAP_PROP_FRAME_COUNT);
     int current_frame = 0;
@@ -85,17 +162,11 @@ int process(VideoCapture& capture) {
             break;
         cout << current_frame++ << "/" << frame_count << endl;
 
-        imshow(original_window_name, frame);
-        Mat grayscale1;
-        cvtColor(frame, grayscale1, COLOR_BGRA2GRAY);
-
-        horizontal_frame = process_frame(grayscale1, horizontal_segments);
-        imshow(horizontal_window_name, horizontal_frame);
-
-        Mat grayscale2;
-        cvtColor(frame, grayscale2, COLOR_BGRA2GRAY);
-        vertical_frame = process_frame(grayscale2, vertical_segments);
-        imshow(vertical_window_name, vertical_frame);
+        original.process(frame);
+        grayscale.process(frame);
+        h.process(frame);
+        v.process(frame);
+        pixelated.process(frame);
 
         char key = static_cast<char>(waitKey(1)); //delay N millis, usually long enough to display and capture input
 
