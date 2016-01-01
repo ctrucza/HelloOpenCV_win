@@ -73,7 +73,7 @@ void process_roi(Mat& r, int red, int green, int blue)
 	}
 }
 
-Mat process_frame(Mat& frame)
+vector<Rect> get_rois(const Mat& frame)
 {
 	int width = frame.cols;
 	int height = frame.rows;
@@ -84,6 +84,7 @@ Mat process_frame(Mat& frame)
 	int pcols = width / pwidth;
 	int prows = height / pheight;
 
+	vector<Rect> result;
 	for (int c = 0; c < pcols; ++c)
 	{
 		for (int r = 0; r < prows; ++r)
@@ -91,11 +92,21 @@ Mat process_frame(Mat& frame)
 			int red = 255 * (double(r) / double(prows));
 			int green = 255 * (double(c) / double(pcols));
 			Rect roi(c*pwidth, r*pheight, pwidth, pheight);
-			Mat roi_img = frame(roi);
-			process_roi(roi_img, red, green, 0);
+			result.push_back(roi);
+			//Mat roi_img = frame(roi);
+			//process_roi(roi_img, red, green, 0);
 		}
 	}
-
+	return result;
+}
+Mat process_frame(Mat& frame)
+{
+	vector<Rect> rois = get_rois(frame);
+	for (int i = 0; i < rois.size(); ++i)
+	{
+		Mat roi_img = frame(rois[i]);
+		process_roi(roi_img, 0, 0, 0);
+	}
 	return frame;
 }
 
