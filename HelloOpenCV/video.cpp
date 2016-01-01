@@ -8,33 +8,10 @@ using namespace std;
 
 void process_roi(Mat& r)
 {
-    double sum = 0;
-    for (int x = 0; x < r.cols; ++x)
-    {
-        for (int y = 0; y < r.rows; ++y)
-        {
-            //auto color = r.at<uchar>(Point(x, y));
-            ////Vec3b color = r.at<Vec3b>(Point(x, y));
-            ////color[0] = blue;
-            ////color[1] = green;
-            ////color[2] = red;
-
-            //double red_boost = red / 255.0;
-            //double green_boost = green / 255.0;
-            //double boost = (red_boost + green_boost) / 2.0;
-
-            //r.at<uchar>(Point(x, y)) = boost*color;
-            sum += r.at<uchar>(Point(x, y));
-        }
-    }
-    double value = sum / (r.rows*r.cols);
-    for (int x = 0; x < r.cols; ++x)
-    {
-        for (int y = 0; y < r.rows; ++y)
-        {
-            r.at<uchar>(Point(x, y)) = static_cast<uchar>(value);
-        }
-    }
+    // calculate mean
+    Scalar m = mean(r);
+    // set all pixels to the mean
+    r = m;
 }
 
 vector<Rect> get_rois(const Mat& frame)
