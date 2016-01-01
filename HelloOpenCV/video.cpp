@@ -42,23 +42,24 @@ public:
     virtual Mat transform(const Mat& frame) const = 0;
 };
 
-class TransformationDisplay
+class ChainedTransformation : public VideoTransformation
 {
 private:
-    string name;
-
-    VideoTransformation& transformation;
+    vector<VideoTransformation*> transformations;
 public:
-    TransformationDisplay(string name, VideoTransformation& t)
-        : name(name), transformation(t)
-    {
-        namedWindow(name, WINDOW_AUTOSIZE);
+    Mat transform(const Mat& frame) const override {
+        auto result = frame;
+        for (auto i = transformations.begin(); i != transformations.end(); ++i)
+        {
+            auto output = (*i)->transform(result);
+            result = output;
+        }
+        return result;
     }
 
-    void display(const Mat& frame) const
+    void add(VideoTransformation* t)
     {
-        auto result = transformation.transform(frame);
-        imshow(name, result);
+        transformations.push_back(t);
     }
 };
 
@@ -134,6 +135,26 @@ public:
     }
 };
 
+class TransformationDisplay
+{
+private:
+    string name;
+
+    VideoTransformation& transformation;
+public:
+    TransformationDisplay(string name, VideoTransformation& t)
+        : name(name), transformation(t)
+    {
+        namedWindow(name, WINDOW_AUTOSIZE);
+    }
+
+    void display(const Mat& frame) const
+    {
+        auto result = transformation.transform(frame);
+        imshow(name, result);
+    }
+};
+
 int process(VideoCapture& capture) {
 
     double width = capture.get(CAP_PROP_FRAME_WIDTH);
@@ -154,6 +175,11 @@ int process(VideoCapture& capture) {
     AveragingTransformation p(capture, 8, 8);
     TransformationDisplay pixelated("pixelated", p);
 
+    ChainedTransformation c;
+    c.add(&g);
+    c.add(&p);
+    TransformationDisplay chained("chained", c);
+
     Mat frame;
 
     double frame_count = capture.get(CAP_PROP_FRAME_COUNT);
@@ -169,6 +195,7 @@ int process(VideoCapture& capture) {
         horizontal.display(frame);
         vertical.display(frame);
         pixelated.display(frame);
+        chained.display(frame);
 
         char key = static_cast<char>(waitKey(1)); //delay N millis, usually long enough to display and capture input
 
