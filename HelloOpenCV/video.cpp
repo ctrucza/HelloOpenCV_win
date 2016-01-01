@@ -9,6 +9,7 @@
 using namespace cv;
 using namespace std;
 
+
 int process(VideoCapture& capture) {
 
     int width = int(capture.get(CAP_PROP_FRAME_WIDTH));
@@ -37,8 +38,14 @@ int process(VideoCapture& capture) {
     ChainedTransformation null_transformation;
     TransformationDisplay null_display("null", null_transformation);
 
-    PredictorTransformation predictor(width, height, 4, 4);
+    PredictorTransformation predictor(width, height, 8, 8);
     TransformationDisplay prediction("prediction", predictor);
+
+    ChainedTransformation loose;
+    loose.add(&g);
+    //loose.add(&p);
+    loose.add(&predictor);
+    TransformationDisplay loose_prediction("loose prediction", loose);
 
     Mat frame;
 
@@ -51,13 +58,14 @@ int process(VideoCapture& capture) {
         cout << current_frame++ << "/" << frame_count << endl;
 
         original.display(frame);
-        grayscale.display(frame);
-        horizontal.display(frame);
-        vertical.display(frame);
-        pixelated.display(frame);
-        chained.display(frame);
-        null_display.display(frame);
-        prediction.display(frame);
+        //grayscale.display(frame);
+        //horizontal.display(frame);
+        //vertical.display(frame);
+        //pixelated.display(frame);
+        //chained.display(frame);
+        //null_display.display(frame);
+        //prediction.display(frame);
+        loose_prediction.display(frame);
 
         char key = static_cast<char>(waitKey(1)); //delay N millis, usually long enough to display and capture input
 
