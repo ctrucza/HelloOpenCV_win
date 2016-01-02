@@ -17,7 +17,7 @@ public:
 
     void display(const cv::Mat& frame) const
     {
-        auto result = transformation.transform(frame);
+        cv::Mat result = transformation.transform(frame);
         cv::imshow(name, result);
     }
 };
