@@ -1,25 +1,22 @@
 #pragma once
 #include "SegmentedTransformation.h"
 
+typedef std::vector<uchar> Patch;
+
+inline Patch to_patch(const cv::Mat& mat)
+{
+	Patch result;
+	for (int i = 0; i < mat.rows; ++i) {
+		result.insert(result.end(), mat.ptr<uchar>(i), mat.ptr<uchar>(i) + mat.cols);
+	}
+	return result;
+}
+
 class PredictorSegment: public Segment
 {
 private:
-	inline std::vector<uchar> to_vector(const cv::Mat& mat)
-	{
-		std::vector<uchar> result;
-		if (mat.isContinuous()) {
-			result.assign(mat.datastart, mat.dataend);
-		}
-		else {
-			for (int i = 0; i < mat.rows; ++i) {
-				result.insert(result.end(), mat.ptr<uchar>(i), mat.ptr<uchar>(i) + mat.cols);
-			}
-		}
-		return result;
-	}
-
-	mutable std::vector<uchar> last;
-	mutable std::map<std::vector<uchar>, cv::Mat> m;
+	Patch last;
+	std::map<Patch, cv::Mat> m;
 public:
 	PredictorSegment(const cv::Rect& rect)
 		:Segment(rect)
@@ -27,7 +24,7 @@ public:
 
 	void predict()
 	{
-		auto copy = to_vector(mat);
+		auto copy = to_patch(mat);
 
 		m[last] = mat;
 		last = copy;
