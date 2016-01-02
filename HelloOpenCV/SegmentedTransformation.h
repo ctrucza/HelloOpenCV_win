@@ -5,32 +5,26 @@
 
 class Segment
 {
-public:
-    cv::Rect rect;
-    cv::Mat mat;
+protected:
+	cv::Rect rect;
+	cv::Mat mat;
 
+public:
     Segment(const cv::Rect& rect)
         :rect(rect)
     {}
+
+	void prepare(cv::Mat& frame)
+    {
+		mat = frame(rect);
+    }
 };
 
-template <class SegmentType=Segment>
+template <class SegmentType>
 class SegmentedTransformation : public VideoTransformation
 {
 private:
     mutable std::vector<SegmentType> segments;
-
-public:
-    cv::Mat transform(const cv::Mat& frame) const override {
-        cv::Mat result = frame.clone();
-        for (typename std::vector<SegmentType>::iterator i = segments.begin(); i != segments.end(); ++i)
-        {
-            cv::Mat roi = result(i->rect);
-            i->mat = roi;
-            transform_segment(*i);
-        }
-        return result;
-    }
 
 protected:
     virtual void transform_segment(SegmentType& segment) const = 0;
@@ -46,17 +40,41 @@ public:
 			segments.push_back(segment);
         }
     }
+
+	cv::Mat transform(const cv::Mat& frame) const override {
+		cv::Mat result = frame.clone();
+		for (auto i = segments.begin(); i != segments.end(); ++i)
+		{
+			i->prepare(result);
+			transform_segment(*i);
+		}
+		return result;
+	}
 };
 
-class AveragingTransformation : public SegmentedTransformation<>
+class AveragingSegment: public Segment
+{
+public:
+	AveragingSegment(const cv::Rect& rect)
+		: Segment(rect)
+	{
+	}
+
+	void calculate_average()
+	{
+		// calculate mean
+		cv::Scalar m = cv::mean(mat);
+		// set all pixels to the mean
+		mat = m;
+	}
+};
+
+class AveragingTransformation : public SegmentedTransformation<AveragingSegment>
 {
 protected:
-    void transform_segment(Segment& segment) const override
+    void transform_segment(AveragingSegment& segment) const override
     {
-        // calculate mean
-        cv::Scalar m = cv::mean(segment.mat);
-        // set all pixels to the mean
-        segment.mat = m;
+		segment.calculate_average();
     }
 
 public:

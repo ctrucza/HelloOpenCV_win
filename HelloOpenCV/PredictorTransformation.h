@@ -1,7 +1,7 @@
 #pragma once
 #include "SegmentedTransformation.h"
 
-class PredictorSegment
+class PredictorSegment: public Segment
 {
 private:
 	inline std::vector<uchar> to_vector(const cv::Mat& mat)
@@ -21,11 +21,8 @@ private:
 	mutable std::vector<uchar> last;
 	mutable std::map<std::vector<uchar>, cv::Mat> m;
 public:
-	cv::Rect rect;
-	cv::Mat mat;
-
 	PredictorSegment(const cv::Rect& rect)
-		:rect(rect)
+		:Segment(rect)
 	{}
 
 	void predict()
