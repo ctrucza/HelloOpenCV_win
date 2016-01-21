@@ -83,8 +83,9 @@ public:
 		:Segment(rect)
 	{}
 
-	void predict()
+	virtual void transform() override
 	{
+
         if (std::find_if(patterns.begin(), patterns.end(), mat_compare(mat)) == patterns.end())
         {
             add_new_pattern();
@@ -108,12 +109,6 @@ public:
 
 class PredictorTransformation: public SegmentedTransformation<PredictorSegment>
 {
-protected:
-    void transform_segment(PredictorSegment& segment) const override 
-    {
-        segment.predict();
-    }
-
 public:
     PredictorTransformation(int width, int height, int segment_width, int segment_height)
         : SegmentedTransformation(width, height, segment_width, segment_height)

@@ -18,7 +18,13 @@ public:
     {
 		mat = frame(rect);
     }
+
+    virtual void transform()
+    {
+        
+    }
 };
+
 
 template <class SegmentType>
 class SegmentedTransformation : public VideoTransformation
@@ -26,30 +32,53 @@ class SegmentedTransformation : public VideoTransformation
 private:
     mutable std::vector<SegmentType> segments;
 
-protected:
-    virtual void transform_segment(SegmentType& segment) const = 0;
+    class ParallelTransform : public cv::ParallelLoopBody
+    {
+    private:
+        std::vector<SegmentType>& segments;
+        cv::Mat& result;
+    public:
+        ParallelTransform(std::vector<SegmentType>& segments, cv::Mat& result)
+            : segments(segments), result(result)
+        {
+
+        }
+
+        virtual void operator()(const cv::Range& range) const override {
+            for (int i = range.start; i != range.end; ++i)
+            {
+                segments[i].prepare(result);
+                segments[i].transform();
+            }
+        }
+    };
 
 public:
+
     SegmentedTransformation(int width, int height, int segment_width, int segment_height)
     {
         Segmentation segmentation(segment_width, segment_height);
         auto rects = segmentation.get_segments(width, height);
         for (auto i = rects.begin(); i != rects.end(); ++i)
         {
-			SegmentType segment(*i);
-			segments.push_back(segment);
+            SegmentType segment(*i);
+            segments.push_back(segment);
         }
     }
 
-	cv::Mat transform(const cv::Mat& frame) const override {
-		cv::Mat result = frame.clone();
-		for (auto i = segments.begin(); i != segments.end(); ++i)
-		{
-			i->prepare(result);
-			transform_segment(*i);
-		}
-		return result;
-	}
+    cv::Mat transform(const cv::Mat& frame) const override {
+        cv::Mat result = frame.clone();
+
+        auto t = ParallelTransform(segments, result);
+        cv::parallel_for_(cv::Range(0, segments.size()), t);
+
+        //for (auto i = segments.begin(); i != segments.end(); ++i)
+        //{
+        //    i->prepare(result);
+        //    i->transform();
+        //}
+        return result;
+    }
 };
 
 class AveragingSegment: public Segment
@@ -60,7 +89,7 @@ public:
 	{
 	}
 
-	void calculate_average()
+	void transform()
 	{
 		// calculate mean
 		cv::Scalar m = cv::mean(mat);
@@ -71,12 +100,6 @@ public:
 
 class AveragingTransformation : public SegmentedTransformation<AveragingSegment>
 {
-protected:
-    void transform_segment(AveragingSegment& segment) const override
-    {
-		segment.calculate_average();
-    }
-
 public:
     AveragingTransformation(int width, int height, int segment_width, int segment_height)
         : SegmentedTransformation(width, height, segment_width, segment_height)
