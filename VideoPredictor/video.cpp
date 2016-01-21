@@ -15,37 +15,40 @@ int process(VideoCapture& capture) {
 
     int width = int(capture.get(CAP_PROP_FRAME_WIDTH));
     int height = int(capture.get(CAP_PROP_FRAME_HEIGHT));
+    vector<TransformationDisplay*> displays;
 
     //NullTransformation o;
     //TransformationDisplay original("original", o);
 
     GrayscaleTransformation g;
     TransformationDisplay grayscale("grayscale", g);
+    displays.push_back(&grayscale);
 
     //AveragingTransformation h(width, height, width, 1);
     //TransformationDisplay horizontal("horizontal", h);
+    //displays.push_back(&horizontal);
 
     //AveragingTransformation v(width, height, 1, height);
     //TransformationDisplay vertical("vertical", v);
+    //displays.push_back(&vertical);
 
     //AveragingTransformation p(width, height, 8, 8);
     //TransformationDisplay pixelated("pixelated", p);
+    //displays.push_back(&pixelated);
 
     //ChainedTransformation c;
     //c.add(&g);
     //c.add(&p);
     //TransformationDisplay chained("chained", c);
-
-    //ChainedTransformation null_transformation;
-    //TransformationDisplay null_display("null", null_transformation);
+    //displays.push_back(&chained);
 
     PredictorTransformation predictor(width, height, 8, 8);
-    //TransformationDisplay prediction("color prediction", predictor);
 
     ChainedTransformation grayscale_predictor;
     grayscale_predictor.add(&g);
     grayscale_predictor.add(&predictor);
     TransformationDisplay grayscale_prediction("grayscale prediction", grayscale_predictor);
+    displays.push_back(&grayscale_prediction);
 
     Mat frame;
 
@@ -57,15 +60,8 @@ int process(VideoCapture& capture) {
             break;
         cout << current_frame++ << "/" << frame_count << endl;
 
-        //original.display(frame);
-        grayscale.display(frame);
-        //horizontal.display(frame);
-        //vertical.display(frame);
-        //pixelated.display(frame);
-        //chained.display(frame);
-        //null_display.display(frame);
-        //prediction.display(frame);
-        grayscale_prediction.display(frame);
+        for (auto display = displays.begin(); display != displays.end(); ++display)
+            (*display)->display(frame);
 
         char key = static_cast<char>(waitKey(1)); //delay N millis, usually long enough to display and capture input
 
