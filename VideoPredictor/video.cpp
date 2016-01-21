@@ -19,10 +19,18 @@ int process(VideoCapture& capture) {
 
     //NullTransformation o;
     //TransformationDisplay original("original", o);
+    //displays.push_back(&original);
 
     GrayscaleTransformation g;
     TransformationDisplay grayscale("grayscale", g);
     displays.push_back(&grayscale);
+
+    PredictorTransformation predictor(width, height, 8, 8);
+    ChainedTransformation grayscale_predictor;
+    grayscale_predictor.add(&g);
+    grayscale_predictor.add(&predictor);
+    TransformationDisplay grayscale_prediction("grayscale prediction", grayscale_predictor);
+    displays.push_back(&grayscale_prediction);
 
     //AveragingTransformation h(width, height, width, 1);
     //TransformationDisplay horizontal("horizontal", h);
@@ -42,13 +50,6 @@ int process(VideoCapture& capture) {
     //TransformationDisplay chained("chained", c);
     //displays.push_back(&chained);
 
-    PredictorTransformation predictor(width, height, 8, 8);
-
-    ChainedTransformation grayscale_predictor;
-    grayscale_predictor.add(&g);
-    grayscale_predictor.add(&predictor);
-    TransformationDisplay grayscale_prediction("grayscale prediction", grayscale_predictor);
-    displays.push_back(&grayscale_prediction);
 
     Mat frame;
 
