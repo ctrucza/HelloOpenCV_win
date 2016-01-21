@@ -9,7 +9,7 @@
 ### Main loop (video.cpp)
 - open a video file
 - read each frame
-- apply processings to each frame
+- apply transformations to each frame and show them
 
 ### VideoTransformation
 - apply a transformation to a frame
