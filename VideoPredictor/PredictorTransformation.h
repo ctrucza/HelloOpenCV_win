@@ -66,17 +66,17 @@ private:
     void add_new_pattern()
     {
         patterns.push_back(mat.clone());
-        for (int i = 0; i < similarityMap.size(); ++i)
-        {
-            if (matches(similarityMap[i]))
-            {
-                similarityMap[i].push_back(mat.clone());
-                return;
-            }
-        }
-        SimilarPatterns new_pattern;
-        new_pattern.push_back(mat.clone());
-        similarityMap.push_back(new_pattern);
+        //for (int i = 0; i < similarityMap.size(); ++i)
+        //{
+        //    if (matches(similarityMap[i]))
+        //    {
+        //        similarityMap[i].push_back(mat.clone());
+        //        return;
+        //    }
+        //}
+        //SimilarPatterns new_pattern;
+        //new_pattern.push_back(mat.clone());
+        //similarityMap.push_back(new_pattern);
     }
 public:
 	PredictorSegment(const cv::Rect& rect)
@@ -92,7 +92,6 @@ public:
         }
 
 		auto patch = to_patch(mat);
-
 		patches[last] = mat;
 		last = patch;
 
@@ -103,9 +102,6 @@ public:
 			mat = result->second;
 	}
 };
-
-//std::vector<cv::Mat> PredictorSegment::patterns;
-//std::vector<SimilarPatterns> PredictorSegment::similarityMap;
 
 class PredictorTransformation: public SegmentedTransformation<PredictorSegment>
 {
