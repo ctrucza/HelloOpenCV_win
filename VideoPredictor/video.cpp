@@ -82,16 +82,16 @@ int process(VideoCapture& capture) {
         }
         output << combined;
 
-        //char key = static_cast<char>(waitKey(1)); //delay N millis, usually long enough to display and capture input
+        char key = static_cast<char>(waitKey(1)); //delay N millis, usually long enough to display and capture input
 
-        //switch (key) {
-        //case 'q':
-        //case 'Q':
-        //case 27: //escape key
-        //    return 0;
-        //default:
-        //    break;
-        //}
+        switch (key) {
+        case 'q':
+        case 'Q':
+        case 27: //escape key
+            return 0;
+        default:
+            break;
+        }
     }
     return 0;
 }
