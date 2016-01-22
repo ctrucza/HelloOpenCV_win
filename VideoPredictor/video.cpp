@@ -50,30 +50,48 @@ int process(VideoCapture& capture) {
     //TransformationDisplay chained("chained", c);
     //displays.push_back(&chained);
 
-
     Mat frame;
 
     double frame_count = capture.get(CAP_PROP_FRAME_COUNT);
     int current_frame = 0;
+
+    VideoWriter output;
+    int fourcc = -1; // static_cast<int>(capture.get(CV_CAP_PROP_FOURCC));
+    int fps = static_cast<int>(capture.get(CV_CAP_PROP_FPS));
+    int stream_count = displays.size();
+    Size S = Size(width, stream_count*height);
+    output.open("result.avi", fourcc, fps, S, true);
+    if (!output.isOpened())
+        cout << "output cannot be opened" << endl;
     for (;;) {
         capture >> frame;
         if (frame.empty())
             break;
         cout << current_frame++ << "/" << frame_count << endl;
 
+        cv::Mat combined(stream_count*height, width, grayscale_prediction.last_frame.type());
+        int stream_no = 0;
         for (auto display = displays.begin(); display != displays.end(); ++display)
+        {
             (*display)->display(frame);
 
-        char key = static_cast<char>(waitKey(1)); //delay N millis, usually long enough to display and capture input
-
-        switch (key) {
-        case 'q':
-        case 'Q':
-        case 27: //escape key
-            return 0;
-        default:
-            break;
+            cv::Rect original_rect(0, stream_no*height, width, height);
+            cv::Mat original_roi = combined(original_rect);
+            (*display)->last_frame.copyTo(original_roi);
+            stream_no++;
         }
+        output << combined;
+
+        //char key = static_cast<char>(waitKey(1)); //delay N millis, usually long enough to display and capture input
+
+        //switch (key) {
+        //case 'q':
+        //case 'Q':
+        //case 27: //escape key
+        //    return 0;
+        //default:
+        //    break;
+        //}
     }
     return 0;
 }

@@ -9,6 +9,8 @@ private:
 
     VideoTransformation& transformation;
 public:
+    mutable cv::Mat last_frame;
+
     TransformationDisplay(std::string name, VideoTransformation& t)
         : name(name), transformation(t)
     {
@@ -19,6 +21,7 @@ public:
     {
         cv::Mat result = transformation.transform(frame);
         cv::imshow(name, result);
+        last_frame = result;
     }
 };
 
