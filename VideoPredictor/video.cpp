@@ -17,73 +17,51 @@ int process(VideoCapture& capture) {
     int height = int(capture.get(CAP_PROP_FRAME_HEIGHT));
     vector<TransformationDisplay*> displays;
 
-    //NullTransformation o;
-    //TransformationDisplay original("original", o);
-    //displays.push_back(&original);
-
     GrayscaleTransformation g;
-    TransformationDisplay grayscale("grayscale", g);
-    displays.push_back(&grayscale);
 
     PredictorTransformation predictor(width, height, 8, 8);
-    ChainedTransformation grayscale_predictor;
-    grayscale_predictor.add(&g);
-    grayscale_predictor.add(&predictor);
-    TransformationDisplay grayscale_prediction("grayscale prediction", grayscale_predictor);
-    displays.push_back(&grayscale_prediction);
 
-    //AveragingTransformation h(width, height, width, 1);
-    //TransformationDisplay horizontal("horizontal", h);
-    //displays.push_back(&horizontal);
+    CombinigTransformation combiner;
+    combiner.add(&g);
+    combiner.add(&predictor);
 
-    //AveragingTransformation v(width, height, 1, height);
-    //TransformationDisplay vertical("vertical", v);
-    //displays.push_back(&vertical);
+    Size size(width, 2 * height);
+    VideoFileWriter writer("foo.avi", -1, 30, size, false);
 
-    //AveragingTransformation p(width, height, 8, 8);
-    //TransformationDisplay pixelated("pixelated", p);
-    //displays.push_back(&pixelated);
+    ChainedTransformation pipeline;
+    pipeline.add(&g);
+    pipeline.add(&predictor);
+    pipeline.add(&combiner);
+    pipeline.add(&writer);
 
-    //ChainedTransformation c;
-    //c.add(&g);
-    //c.add(&p);
-    //TransformationDisplay chained("chained", c);
-    //displays.push_back(&chained);
+    TransformationDisplay view("view", pipeline);
+    displays.push_back(&view);
 
+    //TransformationDisplay grayscale("grayscale", g);
+    //displays.push_back(&grayscale);
+
+    //TransformationDisplay prediction("prediction", pipeline);
+    //displays.push_back(&prediction);
+    
     Mat frame;
 
     double frame_count = capture.get(CAP_PROP_FRAME_COUNT);
     int current_frame = 0;
 
-    VideoWriter output;
-    int fourcc = -1; // static_cast<int>(capture.get(CV_CAP_PROP_FOURCC));
-    int fps = static_cast<int>(capture.get(CV_CAP_PROP_FPS));
-    int stream_count = displays.size();
-    Size S = Size(width, stream_count*height);
-    output.open("result.avi", fourcc, fps, S, true);
-    if (!output.isOpened())
-        cout << "output cannot be opened" << endl;
+
     for (;;) {
         capture >> frame;
         if (frame.empty())
             break;
         cout << current_frame++ << "/" << frame_count << endl;
 
-        cv::Mat combined(stream_count*height, width, grayscale_prediction.last_frame.type());
-        int stream_no = 0;
         for (auto display = displays.begin(); display != displays.end(); ++display)
         {
             (*display)->display(frame);
-
-            cv::Rect original_rect(0, stream_no*height, width, height);
-            cv::Mat original_roi = combined(original_rect);
-            (*display)->last_frame.copyTo(original_roi);
-            stream_no++;
         }
-        output << combined;
 
-        char key = static_cast<char>(waitKey(1)); //delay N millis, usually long enough to display and capture input
-
+        char key = static_cast<char>(waitKey(1));
+        
         switch (key) {
         case 'q':
         case 'Q':

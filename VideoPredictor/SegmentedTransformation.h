@@ -53,6 +53,15 @@ private:
         }
     };
 
+protected:
+    cv::Mat do_transform(const cv::Mat& frame) const override {
+        cv::Mat result = frame.clone();
+
+        auto t = ParallelTransform(segments, result);
+        cv::parallel_for_(cv::Range(0, segments.size()), t);
+        return result;
+    }
+
 public:
 
     SegmentedTransformation(int width, int height, int segment_width, int segment_height)
@@ -66,19 +75,6 @@ public:
         }
     }
 
-    cv::Mat transform(const cv::Mat& frame) const override {
-        cv::Mat result = frame.clone();
-
-        auto t = ParallelTransform(segments, result);
-        cv::parallel_for_(cv::Range(0, segments.size()), t);
-
-        //for (auto i = segments.begin(); i != segments.end(); ++i)
-        //{
-        //    i->prepare(result);
-        //    i->transform();
-        //}
-        return result;
-    }
 };
 
 class AveragingSegment: public Segment
@@ -89,7 +85,7 @@ public:
 	{
 	}
 
-	void transform()
+    void transform() override
 	{
 		// calculate mean
 		cv::Scalar m = cv::mean(mat);
