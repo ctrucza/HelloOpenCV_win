@@ -1,4 +1,5 @@
 #pragma once
+#include <functional>
 #include <opencv2/core.hpp>
 #include "VideoTransformation.h"
 #include "Segmentation.h"
@@ -57,10 +58,17 @@ protected:
     cv::Mat do_transform(const cv::Mat& frame) const override {
         cv::Mat result = frame.clone();
 
+//        cvSetNumThreads(1);
         auto t = ParallelTransform(segments, result);
         cv::parallel_for_(cv::Range(0, segments.size()), t);
         return result;
     }
+
+    void visit_segments(std::function<void(SegmentType)> visitor)
+    {
+        for (auto segment : segments)
+            visitor(segment);
+    };
 
 public:
 
